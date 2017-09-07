@@ -1,0 +1,20 @@
+{
+  "name": "dns-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bunyan": "^1.8.12",
+    "ipaddr.js": "^1.5.2",
+    "log4js": "^2.3.3"
+  },
+  "devDependencies": {
+    "nodeunit": "^0.11.1"
+  }
+}
