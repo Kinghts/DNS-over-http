@@ -18,7 +18,7 @@ cache.readCacheFile()
 		start()
 	})
 	.catch((err) => {
-		console.log(err)
+		errLogger.error(err)
 	})
 
 function start() {
@@ -34,7 +34,7 @@ function start() {
 			case 'A': // ipv4
 				let cacheResult = cache.getResult(type, domain)
 				if (cacheResult) {
-					query.addAnswer(domain, new named.ARecord(cacheResult), 300)
+					query.addAnswer(domain, new named.ARecord(cacheResult.result), 300)
 					server.send(query)
 					break
 				}
