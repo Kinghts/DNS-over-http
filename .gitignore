@@ -2,3 +2,4 @@
 *.cmd
 node_modules/
 /log/*.log
+/cache/*.json
