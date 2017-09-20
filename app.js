@@ -1,3 +1,5 @@
+const config = require('./config/server.config')
+
 const named = require('./lib')
 let server = named.createServer()
 
@@ -22,9 +24,9 @@ cache.readCacheFile()
 	})
 
 function start() {
-	server.listen(53, function () {
+	server.listen(config.localServer.port, config.localServer.address, function () {
 		console.log('DNS server started on port 53');
-	});
+	})
 
 	server.on('query', function (query) {
 		var domain = query.name()
@@ -53,7 +55,7 @@ function start() {
 						errLogger.error(err)
 						server.send(query)
 					})
-				break;
+				break
 			case 'AAAA': // ipv6
 				var record = new named.AAAARecord('::1')
 				query.addAnswer(domain, record, 300)

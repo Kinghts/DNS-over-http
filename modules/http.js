@@ -1,11 +1,12 @@
 const http = require('http')
+const config = require('../config/server.config')
 
 function dnsQueryByHTTP(domain) {
   const options = {
-    hostname: '119.29.29.29',
-    port: 80,
-    path: '/d?dn=' + domain + '.',
-    method: 'GET'
+    hostname: config.httpServer.hostname,
+    port: config.httpServer.port,
+    path: config.httpServer.path(domain),
+    method: config.httpServer.method
   }
   return new Promise(function (resolve, reject) {
     let req = http.request(options, (res) => {
