@@ -4,14 +4,10 @@ const named = require('./lib')
 let server = named.createServer()
 
 const log4js = require('log4js')
-log4js.configure({
-	appenders: { cheese: { type: 'file', filename: './log/running.log' } },
-	categories: { default: { appenders: ['cheese'], level: 'error' } }
-})
-const errLogger = log4js.getLogger()
-const devLogger = log4js.getLogger()
-errLogger.level = 'error'
-devLogger.level = 'info'
+log4js.configure(require('./config/log4js.config.js'))
+const appLog = log4js.getLogger('app')
+const accessLog = log4js.getLogger('access')
+const errLog = log4js.getLogger('error')
 
 const dnsQueryByHTTP = require('./modules/http').dnsQueryByHTTP
 const cache = new (require('./modules/cache').Cache)()
@@ -20,18 +16,18 @@ cache.readCacheFile()
 		start()
 	})
 	.catch((err) => {
-		errLogger.error(err)
+		errLog.error(err)
 	})
 
 function start() {
 	server.listen(config.localServer.port, config.localServer.address, function () {
-		console.log('DNS server started on port 53');
+		appLog.info('DNS server started on port 53');
 	})
 
 	server.on('query', function (query) {
 		var domain = query.name()
 		var type = query.type()
-		devLogger.info('domain: %s; type: %s', domain, type)
+		accessLog.info('domain: %s; type: %s', domain, type)
 		switch (type) {
 			case 'A': // ipv4
 				let cacheResult = cache.getResult(type, domain)
@@ -52,7 +48,7 @@ function start() {
 						server.send(query)
 					})
 					.catch(err => {
-						errLogger.error(err)
+						errLog.error('domain: ' + domain + '\\r\\n' + err)
 						server.send(query)
 					})
 				break
@@ -88,11 +84,11 @@ function start() {
 	})
 
 	server.on('clientError', function (error) {
-		errLogger.error("there was a clientError: %s", error)
+		errLog.error("there was a clientError: %s", error)
 	})
 
 	server.on('uncaughtException', function (error) {
-		errLogger.error("there was an excepton: %s", error.message || error.message())
+		errLog.error("there was an excepton: %s", error.message || error.message())
 	})
 }
 
@@ -100,12 +96,12 @@ process.on('SIGINT', () => {
 	cache.writeCacheToFile()
 		.then(() => {
 			server.close(() => {
-				console.log('server closed')
+				appLog.info('server closed')
 				process.exit()
 			})
 		})
 		.catch((err) => {
-			errLogger.error(err)
+			appLog.error(err)
 			process.exit(1)
 		})
 })
