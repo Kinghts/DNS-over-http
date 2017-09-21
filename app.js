@@ -99,7 +99,10 @@ function start() {
 process.on('SIGINT', () => {
 	cache.writeCacheToFile()
 		.then(() => {
-			process.exit()
+			server.close(() => {
+				console.log('server closed')
+				process.exit()
+			})
 		})
 		.catch((err) => {
 			errLogger.error(err)
