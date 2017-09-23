@@ -3,11 +3,11 @@ const path = require('path')
 const cacheDir = './cache/'
 Date.prototype.Format = require('./dateFormat').format
 const config = require('../config/server.config')
+const LRU = require('./lru.js')
 
 function Cache () {
-
   this.records = {
-    'A': null // Map
+    'A': null // LRU
   }
 }
 
@@ -24,13 +24,13 @@ Cache.prototype.readCacheFile = function () {
             }
             let fileString = data.toString('utf-8')
             if (fileString.match(/^\s*$/g)) { // 文件内容为空
-              this.records[type] = new Map()
+              this.records[type] = new LRU(config.catchControl.maxNumber)
             }
-            this.records[type] = new Map(JSON.parse(fileString))
+            this.records[type] = new LRU(config.catchControl.maxNumber, JSON.parse(fileString))
             resolve()
           })
         } else {
-          this.records[type] = new Map()
+          this.records[type] = new LRU(config.catchControl.maxNumber)
           resolve()
         }
       })
@@ -58,7 +58,7 @@ Cache.prototype.writeCacheToFile = function () {
       let promises = []
       for (let type in this.records) {
         promises.push(new Promise((res, rej) => {
-          fs.writeFile(cacheDir + type + '.json', JSON.stringify([...this.records[type]]), (err) => {
+          fs.writeFile(cacheDir + type + '.json', JSON.stringify([...this.records[type].map]), (err) => {
             if (err) {
               rej(err)
             }
@@ -74,10 +74,9 @@ Cache.prototype.writeCacheToFile = function () {
 }
 
 Cache.prototype.getResult = function (type, domain) {
-  let record = this.records[type].get(domain)
+  let record = this.records[type].getElement(domain)
   if (record) {
     if ((new Date() - new Date(record.updateTime)) > config.catchControl.time) {
-      this.records[type].delete(domain)
       return
     }
   }
@@ -86,13 +85,10 @@ Cache.prototype.getResult = function (type, domain) {
 
 Cache.prototype.updateCache = function (type, domain, result) {
   let records = this.records[type]
-  records.set(domain, {
+  records.addElement(domain, {
     'result': result,
     'updateTime': new Date().Format('yyyy-MM-dd hh:mm:ss')
   })
-  if (records.size > config.catchControl.maxNumber) {
-    records.delete(records.keys().next().value)
-  }
 }
 
 module.exports = {
