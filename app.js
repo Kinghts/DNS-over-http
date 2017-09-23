@@ -101,7 +101,7 @@ process.on('SIGINT', () => {
 			})
 		})
 		.catch((err) => {
-			appLog.error(err)
+			errLog.error(err)
 			process.exit(1)
 		})
 })
