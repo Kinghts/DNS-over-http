@@ -40,18 +40,37 @@ Cache.prototype.readCacheFile = function () {
 }
 
 Cache.prototype.writeCacheToFile = function () {
-  let promises = []
-  for (let type in this.records) {
-    promises.push(new Promise((resolve, reject) => {
-      fs.writeFile(cacheDir + type + '.json', JSON.stringify([...this.records[type]]), (err) => {
-        if (err) {
-          reject()
+  return new Promise((resolve, reject) => {
+    new Promise((reso, reje) => {
+      fs.exists(cacheDir, (exists) => {
+        if (!exists) {
+          fs.mkdir(cacheDir, (err) => {
+            if (err) {
+              reje(err)
+            }
+            reso()
+          })
+        } else {
+          reso()
         }
-        resolve()
       })
-    }))
-  }
-  return Promise.all(promises)
+    }).then(() => {
+      let promises = []
+      for (let type in this.records) {
+        promises.push(new Promise((res, rej) => {
+          fs.writeFile(cacheDir + type + '.json', JSON.stringify([...this.records[type]]), (err) => {
+            if (err) {
+              rej(err)
+            }
+            res()
+          })
+        }))
+      }
+      resolve(Promise.all(promises))
+    }).catch(err => {
+      reject(err)
+    })
+  })
 }
 
 Cache.prototype.getResult = function (type, domain) {
