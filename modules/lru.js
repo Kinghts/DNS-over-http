@@ -22,7 +22,6 @@ function LRU (maxLength, initData) {
     let _list = this.list
     _list.splice(_list.indexOf(key),1)
     _list.unshift(key)
-    console.log('hit: ' + key)
   }
 }
 
@@ -43,7 +42,6 @@ LRU.prototype.addElement = function (key, value) {
       _map.delete(_list.pop())
     }
   }
-  console.log('arr[0]: ' + _list[0])
 }
 
 /**
