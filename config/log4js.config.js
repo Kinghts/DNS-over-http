@@ -3,15 +3,21 @@ module.exports = {
     out: { type: 'console' },
     access: { 
       type: 'dateFile', 
-      filename: 'log/access.log'
+      filename: 'log/access',
+      pattern: '.log',
+      alwaysIncludePattern: true
     },
     app: {
       type: 'dateFile',
-      filename: 'log/app.log'
+      filename: 'log/app',
+      pattern: '.log',
+      alwaysIncludePattern: true
     },
     error: {
       type: 'dateFile',
-      filename: 'log/error.log'
+      filename: 'log/error',
+      pattern: '.log',
+      alwaysIncludePattern: true
     }
   },
   categories: {
