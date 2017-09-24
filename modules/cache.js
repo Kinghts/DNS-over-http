@@ -58,7 +58,8 @@ Cache.prototype.writeCacheToFile = function () {
       let promises = []
       for (let type in this.records) {
         promises.push(new Promise((res, rej) => {
-          fs.writeFile(cacheDir + type + '.json', JSON.stringify([...this.records[type].map]), (err) => {
+          let map = this.records[type].toMap()
+          fs.writeFile(cacheDir + type + '.json', JSON.stringify([...map]), (err) => {
             if (err) {
               rej(err)
             }

@@ -1,27 +1,18 @@
+const LinkedMap = require('./linkedMap')
+
 /**
  * LRU缓存算法的一种实现
  */
 function LRU (maxLength, initData) {
+  this.maxLength = maxLength
+  this.linkedMap = new LinkedMap()
   if (initData) {
     if (initData.length > maxLength) {
       throw 'LRU\'s init data length must smaller or equal to max length' 
     }
-    this.map = new Map(initData)
-    this.list = []
     initData.forEach(element => {
-      this.list.push(element[0])
+      this.linkedMap.push(element[0], element[1])
     })
-  } else {
-    this.map = new Map()
-    this.list = []
-  }
-  this.length = maxLength
-  
-  // 命中缓存
-  this._hit = (key) => {
-    let _list = this.list
-    _list.splice(_list.indexOf(key),1)
-    _list.unshift(key)
   }
 }
 
@@ -29,18 +20,11 @@ function LRU (maxLength, initData) {
  * 新加入元素
  */
 LRU.prototype.addElement = function (key, value) {
-  let _map = this.map
-  let _list = this.list
-  if (_map.has(key)) { // 重复的key
-    _map.set(key, value)
-    this._hit(key)
-    _list[0] = value  
-  } else {
-    _map.set(key, value)
-    _list.unshift(key)
-    if (_list.length > this.length) {
-      _map.delete(_list.pop())
-    }
+  let _map = this.linkedMap
+  _map.set(key, value)
+  _map.moveToHead(key)
+  if (_map.length > this.maxLength) {
+    _map.pop()
   }
 }
 
@@ -48,11 +32,18 @@ LRU.prototype.addElement = function (key, value) {
  * 获取指定元素
  */
 LRU.prototype.getElement = function (key) {
-  let element = this.map.get(key)
+  let element = this.linkedMap.get(key)
   if (element) {
-    this._hit(key)
+    this.linkedMap.moveToHead(key)
   }
   return element
+}
+
+/**
+ * 移除循环引用，并返回map对象
+ */
+LRU.prototype.toMap = function () {
+  return this.linkedMap.toMap()
 }
 
 module.exports = LRU
