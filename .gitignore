@@ -1,5 +1,5 @@
 /.vscode
 *.bat
 node_modules/
-/log/*.log
+/log/*
 /cache/*.json
