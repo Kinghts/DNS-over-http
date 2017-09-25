@@ -64,7 +64,7 @@ LinkedMap.prototype.moveToHead = function (key) {
  */
 LinkedMap.prototype.toMap = function () {
   let map = new Map()
-  let i = 0,iNode = this.head.next
+  let i = 0,iNode = this.linkedList.head.next
   while (i < this.linkedList.length) {
     map.set(iNode.key, iNode.value)
     iNode = iNode.next
