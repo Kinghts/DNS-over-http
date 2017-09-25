@@ -25,8 +25,9 @@ Cache.prototype.readCacheFile = function () {
             let fileString = data.toString('utf-8')
             if (fileString.match(/^\s*$/g)) { // 文件内容为空
               this.records[type] = new LRU(config.catchControl.maxNumber)
+            } else {
+              this.records[type] = new LRU(config.catchControl.maxNumber, JSON.parse(fileString))              
             }
-            this.records[type] = new LRU(config.catchControl.maxNumber, JSON.parse(fileString))
             resolve()
           })
         } else {
