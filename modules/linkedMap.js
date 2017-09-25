@@ -2,8 +2,8 @@ const Node = require('./node')
 const LinkedList = require('./linkedList')
 
 function LinkedMap () {
-  this.linkedList = new LinkedList()
-  this.map = new Map()
+  this.linkedList = new LinkedList() // key,value
+  this.map = new Map() // key-node
 }
 
 LinkedMap.prototype.has = function (key) {
@@ -12,9 +12,11 @@ LinkedMap.prototype.has = function (key) {
 
 LinkedMap.prototype.set = function (key, value) {
   if (this.has(key)) {
-    this.map.set(key, value)
+    this.map.get(key).value = value
   } else {
-    this.push(key, value)
+    let node = new Node(key, value)
+    this.map.set(key, node)
+    this.linkedList.insertAfter(node, this.linkedList.head.prior)
   }
 }
 
@@ -25,32 +27,15 @@ LinkedMap.prototype.get = function (key) {
   }
 }
 
-LinkedMap.prototype.push = function (key, value) {
-  if (this.has(key)) {
-    throw 'repeat key'
-  }
-  this.linkedList.insertAfter(new Node(key, value), this.linkedList.head.prior)
-}
-
 LinkedMap.prototype.pop = function () {
-  let node = this.linkedList.deleteNode(this.linkedList.head.prior)
-  if (node) {
-    return node.value
-  }
-}
-
-LinkedMap.prototype.unshift = function (key, value) {
-  if (this.has(key)) {
-    throw 'repeat key'
-  }
-  this.linkedList.insertAfter(new Node(key, value), this.linkedList.head)
+  return this.linkedList.deleteNode(this.linkedList.head.prior)
 }
 
 /**
  * 将匹配的Node移到表头
  */
 LinkedMap.prototype.moveToHead = function (key) {
-  if (this.length > 1) {
+  if (this.linkedList.length > 1) {
     let node = this.map.get(key)
     this.linkedList.deleteNode(node)
     this.linkedList.insertAfter(node, this.linkedList.head)

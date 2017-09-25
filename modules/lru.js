@@ -23,7 +23,7 @@ LRU.prototype.addElement = function (key, value) {
   let _map = this.linkedMap
   _map.set(key, value)
   _map.moveToHead(key)
-  if (_map.length > this.maxLength) {
+  if (_map.linkedList.length > this.maxLength) {
     _map.pop()
   }
 }

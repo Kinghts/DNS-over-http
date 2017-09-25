@@ -8,12 +8,15 @@ function LinkedList () {
 }
 
 LinkedList.prototype.insertAfter = function (snode, node) {
-  if (node) {
+  if (node && snode) {
     snode.next = node.next
     node.next.prior = snode
     node.next = snode
     snode.prior = node
     this.length++
+    this.print()
+  } else {
+    throw 'snode and node shouldn\'t be empty'
   }
 }
 
@@ -26,6 +29,16 @@ LinkedList.prototype.deleteNode = function (node) {
     this.length--
     return node
   }
+}
+
+LinkedList.prototype.print = function () {
+  let node = this.head.next,n = 0
+  while(node !== this.head) {
+    console.log(n + ': ' + node.key)
+    node = node.next
+    n++
+  }
+  console.log('\\n')
 }
 
 module.exports = LinkedList
