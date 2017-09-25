@@ -11,7 +11,7 @@ function LRU (maxLength, initData) {
       throw 'LRU\'s init data length must smaller or equal to max length' 
     }
     initData.forEach(element => {
-      this.linkedMap.push(element[0], element[1])
+      this.linkedMap.set(element[0], element[1])
     })
   }
 }
