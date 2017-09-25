@@ -14,7 +14,6 @@ LinkedList.prototype.insertAfter = function (snode, node) {
     node.next = snode
     snode.prior = node
     this.length++
-    this.print()
   } else {
     throw 'snode and node shouldn\'t be empty'
   }
@@ -38,7 +37,7 @@ LinkedList.prototype.print = function () {
     node = node.next
     n++
   }
-  console.log('\\n')
+  console.log('----------------------------------')
 }
 
 module.exports = LinkedList
