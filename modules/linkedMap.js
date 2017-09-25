@@ -28,7 +28,9 @@ LinkedMap.prototype.get = function (key) {
 }
 
 LinkedMap.prototype.pop = function () {
-  return this.linkedList.deleteNode(this.linkedList.head.prior)
+  let node = this.linkedList.deleteNode(this.linkedList.head.prior)
+  this.map.delete(node.key)
+  return node
 }
 
 /**
