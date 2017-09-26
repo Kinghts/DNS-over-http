@@ -1,4 +1,4 @@
-const LinkedMap = require('./linkedMap')
+const LinkedMap = require('./struct/linkedMap')
 
 /**
  * LRU缓存算法的一种实现
