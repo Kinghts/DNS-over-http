@@ -1,10 +1,11 @@
 module.exports = {
-  // 提供http dns的服务器
+  // 提供http dns的服务器，默认使用dnspod的服务器
   httpServer: {
     hostname: '119.29.29.29',
     port: 80,
     path: domain => '/d?dn=' + domain + '.',
-    method: 'GET'
+    method: 'GET',
+    resultHandler: result => result.split(';')[0]
   },
   // 本地dns服务器配置
   localServer: {

@@ -1,11 +1,13 @@
 const fs = require('fs')
 const path = require('path')
-const cacheDir = './cache/'
-Date.prototype.Format = require('./dateFormat').format
-const config = require('../config/server.config')
-const LRU = require('./lru.js')
+const cacheDir = '../../cache/'
+Date.prototype.Format = require('../dateFormat').format
+const config = require('../../config/server.config')
+const LRU = require('../lru.js')
+const httpHandler = new (require('./http'))
 
 function Cache () {
+  this.sync = true
   this.records = {
     'A': null // LRU
   }
@@ -75,14 +77,16 @@ Cache.prototype.writeCacheToFile = function () {
   })
 }
 
-Cache.prototype.getResult = function (type, domain) {
+Cache.prototype.getResult = function (domain, type) {
+  if (!type) {
+    type = 'A'
+  }
   let record = this.records[type].getElement(domain)
   if (record) {
-    if ((new Date() - new Date(record.updateTime)) > config.catchControl.time) {
-      return
+    if ((new Date() - new Date(record.updateTime)) <= config.catchControl.time) {
+      return record.result
     }
   }
-  return record
 }
 
 Cache.prototype.updateCache = function (type, domain, result) {
@@ -93,6 +97,4 @@ Cache.prototype.updateCache = function (type, domain, result) {
   })
 }
 
-module.exports = {
-  Cache
-}
+module.exports = Cache

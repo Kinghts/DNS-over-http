@@ -9,9 +9,14 @@ const appLog = log4js.getLogger('app')
 const accessLog = log4js.getLogger('access')
 const errLog = log4js.getLogger('error')
 
-const dnsQueryByHTTP = require('./modules/http').dnsQueryByHTTP
-const cache = new (require('./modules/cache').Cache)()
-cache.readCacheFile()
+const blockHandler = new (require('./modules/handler/block'))()
+const hostsHandler = new (require('./modules/handler/hosts'))()
+const cacheHandler = new (require('./modules/handler/cache'))()
+const httpHandler = new (require('./modules/handler/http'))()
+
+const handlers = [blockHandler, hostsHandler, cacheHandler, httpHandler]
+
+cacheHandler.readCacheFile()
 	.then(() => {
 		start()
 	})
@@ -30,27 +35,33 @@ function start() {
 		accessLog.info('domain: %s; type: %s', domain, type)
 		switch (type) {
 			case 'A': // ipv4
-				let cacheResult = cache.getResult(type, domain)
-				if (cacheResult) {
-					query.addAnswer(domain, new named.ARecord(cacheResult.result), 300)
-					server.send(query)
-					break
-				}
-				dnsQueryByHTTP(domain)
-					.then((ip) => {
-						if (ip) {
-							ip = ip.split(';')[0]
-						} else {
-							throw 'no DNS result'
+				let result
+				for (let handler of handlers) {
+					if (handler.sync) {
+						result = handler.getResult(domain)
+						if (result) {
+							query.addAnswer(domain, new named.ARecord(result), 300)
+							server.send(query)
+							break
 						}
-						cache.updateCache(type, domain, ip)
-						query.addAnswer(domain, new named.ARecord(ip), 300)
-						server.send(query)
-					})
-					.catch(err => {
-						errLog.error('domain: ' + domain + '\\r\\n' + err)
-						server.send(query)
-					})
+					} else {
+						handler.getResult(domain)
+							.then(ip => {
+								if (ip) {
+									query.addAnswer(domain, new named.ARecord(ip), 300)
+									cacheHandler.updateCache(type, domain, ip)
+									server.send(query)
+								} else {
+									accessLog.info('domain: ' + domain + ' no answer')
+									server.send(query)
+								}
+							})
+							.catch(err => {
+								errLog.error('domain: ' + domain + '\\r\\n' + err)
+								server.send(query)
+							})
+					}
+				}
 				break
 			case 'AAAA': // ipv6
 				var record = new named.AAAARecord('::1')
@@ -93,7 +104,7 @@ function start() {
 }
 
 process.on('SIGINT', () => {
-	cache.writeCacheToFile()
+	cacheHandler.writeCacheToFile()
 		.then(() => {
 			server.close(() => {
 				appLog.info('server closed')

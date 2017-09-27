@@ -1,12 +1,6 @@
 module.exports = {
   appenders: {
     out: { type: 'console' },
-    access: { 
-      type: 'dateFile', 
-      filename: 'log/access',
-      pattern: '.log',
-      alwaysIncludePattern: true
-    },
     app: {
       type: 'dateFile',
       filename: 'log/app',
@@ -22,7 +16,7 @@ module.exports = {
   },
   categories: {
     access: {
-      appenders: ['out', 'access'],
+      appenders: ['out'],
       level: 'info'
     },
     app: {
