@@ -15,6 +15,6 @@ module.exports = {
   // 缓存策略
   catchControl: {
     time: 172800000, // 缓存记录保存时间，单位：毫秒
-    maxNumber: 100 // 每种记录的最大条数
+    maxNumber: 1000 // 每种记录的最大条数
   }
 }
