@@ -11,12 +11,13 @@ LinkedMap.prototype.has = function (key) {
 }
 
 LinkedMap.prototype.set = function (key, value) {
-  if (this.has(key)) {
-    this.map.get(key).value = value
+  let _this = this
+  if (_this.has(key)) {
+    _this.map.get(key).value = value
   } else {
     let node = new Node(key, value)
-    this.map.set(key, node)
-    this.linkedList.insertAfter(node, this.linkedList.head.prior)
+    _this.map.set(key, node)
+    _this.linkedList.insertAfter(node, _this.linkedList.head.prior)
   }
 }
 
@@ -28,8 +29,9 @@ LinkedMap.prototype.get = function (key) {
 }
 
 LinkedMap.prototype.pop = function () {
-  let node = this.linkedList.deleteNode(this.linkedList.head.prior)
-  this.map.delete(node.key)
+  let _this = this
+  let node = _this.linkedList.deleteNode(_this.linkedList.head.prior)
+  _this.map.delete(node.key)
   return node
 }
 
@@ -37,13 +39,12 @@ LinkedMap.prototype.pop = function () {
  * 将匹配的Node移到表头
  */
 LinkedMap.prototype.moveToHead = function (key) {
-  if (this.linkedList.length > 1) {
-    let node = this.map.get(key)
-    this.linkedList.deleteNode(node)
-    this.linkedList.insertAfter(node, this.linkedList.head)
+  let _this = this
+  if (_this.linkedList.length > 1) {
+    let node = _this.map.get(key)
+    _this.linkedList.deleteNode(node)
+    _this.linkedList.insertAfter(node, _this.linkedList.head)
   }
-  console.log('head: ' + this.linkedList.head.next.key)
-  console.log('length: ' + this.linkedList.length)
 }
 
 /**

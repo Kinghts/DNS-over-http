@@ -19,13 +19,14 @@ function Block () {
 }
 
 Block.prototype.getResult = function (domain) {
-  if (this.blockUrl.has(domain)) {
-    return this.redirect
+  let _this = this
+  if (_this.blockUrl.has(domain)) {
+    return _this.redirect
   }
-  for (let reg of this.blockRegex) {
+  for (let reg of _this.blockRegex) {
     reg.lastIndex = 0
     if (reg.test(domain)) {
-      return this.redirect
+      return _this.redirect
     }
   }
 }

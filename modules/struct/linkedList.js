@@ -20,12 +20,13 @@ LinkedList.prototype.insertAfter = function (snode, node) {
 }
 
 LinkedList.prototype.deleteNode = function (node) {
-  if (node && node !== this.head && this.length > 0) {
+  let _this = this
+  if (node && node !== _this.head && _this.length > 0) {
     node.prior.next = node.next
     node.next.prior = node.prior
     node.prior = null
     node.next = null
-    this.length--
+    _this.length--
     return node
   }
 }

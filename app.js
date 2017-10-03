@@ -1,5 +1,3 @@
-const easyMonitor = require('easy-monitor');
-easyMonitor('DNS-over-http');
 
 const config = require('./config/server.config')
 
