@@ -20,3 +20,7 @@ hosts.config.js 可以自定义域名解析结果
 log4js.config.js 是服务器的日志设置，可以参考[log4js-node](https://nomiddlename.github.io/log4js-node/)进行配置
 
 server.config.js 可以配置服务器的监听端口、ip和缓存设置
+
+# 常见问题
+## 在windows上启动失败
+可能是53端口被IP Helper服务占用，请禁用IP Helper服务，重启计算机后再尝试启动程序
