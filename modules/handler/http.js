@@ -11,7 +11,8 @@ Http.prototype.getResult = function (domain) {
       hostname: config.httpServer.hostname,
       port: config.httpServer.port,
       path: config.httpServer.path(domain),
-      method: config.httpServer.method
+      method: config.httpServer.method,
+      agent: false
     }
     let req = http.request(options, (res) => {
       // console.log('STATUS: ' + res.statusCode)
