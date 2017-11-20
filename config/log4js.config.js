@@ -1,15 +1,19 @@
+const path = require('path')
+
+const logDir = path.resolve(__dirname, '../log') // 需要绝对路径
+
 module.exports = {
   appenders: {
     out: { type: 'console' },
     app: {
       type: 'dateFile',
-      filename: 'log/app',
+      filename: path.resolve(logDir, 'app'),
       pattern: '.log',
       alwaysIncludePattern: true
     },
     error: {
       type: 'dateFile',
-      filename: 'log/error',
+      filename: path.resolve(logDir, 'error'),
       pattern: '.log',
       alwaysIncludePattern: true
     }
