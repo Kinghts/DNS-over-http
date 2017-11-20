@@ -1,4 +1,6 @@
-const block = require('../../config/block.config.js')
+const path = require('path')
+const config = require('../../config/config.js')
+const block = require(path.resolve(config.configFilePath, 'block.config.js'))
 
 function Block () {
   this.sync = true

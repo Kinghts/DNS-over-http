@@ -1,10 +1,12 @@
 const fs = require('fs')
 const path = require('path')
-const cacheDir = '../../cache/'
-Date.prototype.Format = require('../dateFormat').format
-const config = require('../../config/server.config')
+const config = require('../../config/config.js')
+const serverConfig = require(path.resolve(config.configFilePath, 'server.config.js'))
+const cacheDir = serverConfig.catchControl.cacheFileDir
 const LRU = require('../lru.js')
 const httpHandler = new (require('./http'))
+
+Date.prototype.Format = require('../dateFormat').format
 
 function Cache () {
   this.sync = true
@@ -17,7 +19,7 @@ Cache.prototype.readCacheFile = function () {
   let promises = []
   for (let type in this.records) {
     promises.push(new Promise((resolve, reject) => {
-      let filePath = cacheDir + type + '.json'
+      let filePath = path.resolve(cacheDir, type + '.json')
       fs.exists(filePath, (exists) => {
         if (exists) {
           fs.readFile(filePath, (err, data) => {
@@ -26,14 +28,14 @@ Cache.prototype.readCacheFile = function () {
             }
             let fileString = data.toString('utf-8')
             if (fileString.match(/^\s*$/g)) { // 文件内容为空
-              this.records[type] = new LRU(config.catchControl.maxNumber)
+              this.records[type] = new LRU(serverConfig.catchControl.maxNumber)
             } else {
-              this.records[type] = new LRU(config.catchControl.maxNumber, JSON.parse(fileString))              
+              this.records[type] = new LRU(serverConfig.catchControl.maxNumber, JSON.parse(fileString))              
             }
             resolve()
           })
         } else {
-          this.records[type] = new LRU(config.catchControl.maxNumber)
+          this.records[type] = new LRU(serverConfig.catchControl.maxNumber)
           resolve()
         }
       })
@@ -62,7 +64,7 @@ Cache.prototype.writeCacheToFile = function () {
       for (let type in this.records) {
         promises.push(new Promise((res, rej) => {
           let map = this.records[type].toMap()
-          fs.writeFile(cacheDir + type + '.json', JSON.stringify([...map]), (err) => {
+          fs.writeFile(path.resolve(cacheDir, type + '.json'), JSON.stringify([...map]), (err) => {
             if (err) {
               rej(err)
             }
@@ -83,7 +85,7 @@ Cache.prototype.getResult = function (domain, type) {
   }
   let record = this.records[type].getElement(domain)
   if (record) {
-    if ((new Date() - new Date(record.updateTime)) <= config.catchControl.time) {
+    if ((new Date() - new Date(record.updateTime)) <= serverConfig.catchControl.time) {
       return record.result
     }
   }

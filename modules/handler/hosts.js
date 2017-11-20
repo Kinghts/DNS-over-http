@@ -1,4 +1,6 @@
-const hosts = require('../../config/hosts.config')
+const path = require('path')
+const config = require('../../config/config.js')
+const hosts = require(path.resolve(config.configFilePath, 'hosts.config.js'))
 
 function Hosts () {
   this.sync = true
