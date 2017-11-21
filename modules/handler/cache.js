@@ -2,7 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const config = require('../../config/base.config.js')
 const serverConfig = require(path.resolve(config.configFilePath, 'server.config.js'))
-const cacheDir = serverConfig.catchControl.cacheFileDir
+const cacheDir = serverConfig.cacheControl.cacheFileDir
 const LRU = require('../lru.js')
 const httpHandler = new (require('./http'))
 
@@ -28,14 +28,14 @@ Cache.prototype.readCacheFile = function () {
             }
             let fileString = data.toString('utf-8')
             if (fileString.match(/^\s*$/g)) { // 文件内容为空
-              this.records[type] = new LRU(serverConfig.catchControl.maxNumber)
+              this.records[type] = new LRU(serverConfig.cacheControl.maxNumber)
             } else {
-              this.records[type] = new LRU(serverConfig.catchControl.maxNumber, JSON.parse(fileString))              
+              this.records[type] = new LRU(serverConfig.cacheControl.maxNumber, JSON.parse(fileString))              
             }
             resolve()
           })
         } else {
-          this.records[type] = new LRU(serverConfig.catchControl.maxNumber)
+          this.records[type] = new LRU(serverConfig.cacheControl.maxNumber)
           resolve()
         }
       })
@@ -85,7 +85,7 @@ Cache.prototype.getResult = function (domain, type) {
   }
   let record = this.records[type].getElement(domain)
   if (record) {
-    if ((new Date() - new Date(record.updateTime)) <= serverConfig.catchControl.time) {
+    if ((new Date() - new Date(record.updateTime)) <= serverConfig.cacheControl.time) {
       return record.result
     }
   }
