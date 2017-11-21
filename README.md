@@ -13,6 +13,8 @@ DNS服务器的代码来自[node-named](https://github.com/trevoro/node-named)�
 # 配置
 config目录包含了所有配置文件
 
+base.config.js 用于指定下面4个配置文件所在目录
+
 block.config.js 可以配置需要屏蔽的域名
 
 hosts.config.js 可以自定义域名解析结果
