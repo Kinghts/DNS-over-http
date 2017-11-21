@@ -15,9 +15,10 @@ module.exports = {
     port: 53
   },
   // 缓存策略
-  catchControl: {
+  cacheControl: {
     cacheFileDir: path.resolve(__dirname, '../cache/'), // 缓存文件所在目录的绝对路径
     time: 172800000, // 缓存记录保存时间，单位：毫秒
-    maxNumber: 1000 // 每种记录的最大条数
+    maxNumber: 1000, // 每种记录的最大条数
+    interval: 3600000, // 缓存定时写入文件，单位：毫秒
   }
 }

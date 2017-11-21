@@ -21,6 +21,9 @@ const handlers = [blockHandler, hostsHandler, cacheHandler, httpHandler]
 cacheHandler.readCacheFile()
 	.then(() => {
 		start()
+		setInterval(() => { // 缓存定时写入文件
+			cacheHandler.writeCacheToFile()
+		},serverConfig.cacheControl.interval)
 	})
 	.catch((err) => {
 		errLog.error(err)
