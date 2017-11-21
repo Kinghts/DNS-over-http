@@ -1,11 +1,12 @@
-
-const config = require('./config/server.config')
+const path = require('path')
+const config = require('./config/base.config.js')
+const serverConfig = require(path.resolve(config.configFilePath, 'server.config.js'))
 
 const named = require('./lib')
 let server = named.createServer()
 
 const log4js = require('log4js')
-log4js.configure(require('./config/log4js.config.js'))
+log4js.configure(require(path.resolve(config.configFilePath, 'log4js.config.js')))
 const appLog = log4js.getLogger('app')
 const accessLog = log4js.getLogger('access')
 const errLog = log4js.getLogger('error')
@@ -26,7 +27,7 @@ cacheHandler.readCacheFile()
 	})
 
 function start() {
-	server.listen(config.localServer.port, config.localServer.address, function () {
+	server.listen(serverConfig.localServer.port, serverConfig.localServer.address, function () {
 		appLog.info('DNS server started on port 53');
 	})
 

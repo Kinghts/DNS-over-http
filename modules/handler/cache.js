@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const config = require('../../config/config.js')
+const config = require('../../config/base.config.js')
 const serverConfig = require(path.resolve(config.configFilePath, 'server.config.js'))
 const cacheDir = serverConfig.catchControl.cacheFileDir
 const LRU = require('../lru.js')

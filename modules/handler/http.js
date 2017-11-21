@@ -1,6 +1,6 @@
 const http = require('http')
 const path = require('path')
-const config = require('../../config/config.js')
+const config = require('../../config/base.config.js')
 const serverConfig = require(path.resolve(config.configFilePath, 'server.config.js'))
 
 function Http () {
