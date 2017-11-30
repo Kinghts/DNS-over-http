@@ -21,9 +21,6 @@ const handlers = [blockHandler, hostsHandler, cacheHandler, httpHandler]
 cacheHandler.readCacheFile()
 	.then(() => {
 		start()
-		setInterval(() => { // 缓存定时写入文件
-			cacheHandler.writeCacheToFile()
-		},serverConfig.cacheControl.interval)
 	})
 	.catch((err) => {
 		errLog.error(err)
@@ -108,16 +105,22 @@ function start() {
 	})
 }
 
-process.on('SIGINT', () => {
+// 缓存定时写入文件
+const interv = setInterval(() => {
 	cacheHandler.writeCacheToFile()
 		.then(() => {
-			server.close(() => {
-				appLog.info('server closed')
-				process.exit()
-			})
+			appLog.info('save cache success')
 		})
 		.catch((err) => {
 			errLog.error(err)
-			process.exit(1)
 		})
+},serverConfig.cacheControl.interval)
+
+process.on('SIGINT', () => {
+	clearInterval(interv)
+	
+	server.close(() => {
+		appLog.info('server closed')
+		process.exit()
+	})
 })
