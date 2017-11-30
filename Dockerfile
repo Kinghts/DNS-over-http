@@ -4,7 +4,6 @@ FROM node:8.9.1
 # 指定容器的时区
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai  /etc/localtime
 
-RUN mkdir -p /user/src/volume
 RUN mkdir -p /user/src/app
 WORKDIR /user/src/app
 
