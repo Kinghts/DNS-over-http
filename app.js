@@ -74,91 +74,107 @@ let socket
 	})
 
 	socket.on('error', function (err) {
-
+		appLog.error(err)
 	})
 
 	socket.on('message', function (buffer, rinfo) {
-		w_dnsHandler.send({ type: msgType.recBuf, msg: { buffer: buffer, rinfo: rinfo } })
+		w_dnsHandlers[workerIndex()].send({ type: msgType.recBuf, msg: { buffer: buffer, rinfo: rinfo } })
 	})
 
 	socket.bind(port, address)
 })()
 
-let w_dnsHandler = cp.fork(path.resolve(__dirname, './modules/worker/dnsHandler.js'))
-
-w_dnsHandler.on('message', function (msg) {
-	var m = msg.msg
-	switch (msg.type) {
-		case msgType.info:
-			// appLog.info('dnsHandler: ' + m)
-			break
-		case msgType.error:
-			errLog.error('dnsHandler: ' + m)
-			break
-		case msgType.sendBuf:
-			send(new Buffer(m.buf.data), m.len, m.port, m.addr)
-			break
-		case msgType.query:
-			Object.assign(m, Query.prototype)
-			getRecord(m)
-			w_dnsHandler.send({ type: msgType.answer, msg: m })
-			break
-		case msgType.update:
-			console.log('update: ' + m)
-			break
+let childNum = serverConfig.childProcess.num
+let w_dnsHandlers = []
+let workerIndex = function () {
+	if (workerIndex === undefined) {
+		workerIndex = 0
+	} else {
+		return workerIndex < childNum ? workerIndex++ : 0
 	}
+}
+for (let i = 0; i < childNum; i++) {
+	w_dnsHandlers.push(cp.fork(path.resolve(__dirname, './modules/worker/dnsHandler.js')))
+}
+
+w_dnsHandlers.map(function (worker) {
+	worker.on('message', function (msg) {
+		var m = msg.msg
+		switch (msg.type) {
+			case msgType.info:
+				// appLog.info('dnsHandler: ' + m)
+				break
+			case msgType.error:
+				errLog.error('dnsHandler: ' + m)
+				break
+			case msgType.sendBuf:
+				send(new Buffer(m.buf.data), m.len, m.port, m.addr)
+				console.log('send answer')
+				break
+			case msgType.query:
+				Object.assign(m, Query.prototype)
+				getRecord(m)
+				this.send({ type: msgType.answer, msg: m })
+				break
+			case msgType.update:
+				console.log('update: ' + m)
+				break
+		}
+	})
 })
 
 function getRecord(query) {
-	var domain = query.name()
-	var type = query.type()
-	//appLog.info('query: ' + domain + ' type: ' + type)
-	switch (type) {
-		case 'A': // ipv4
-			let result
-			for (let handler of handlers) {
-				result = handler.getResult(domain)
-				if (result) {
-					query.addAnswer(domain, new named.ARecord(result), 300)
-					break
+	setImmediate(function () {
+		var domain = query.name()
+		var type = query.type()
+		appLog.info('query: ' + domain + ' type: ' + type)
+		switch (type) {
+			case 'A': // ipv4
+				let result
+				for (let handler of handlers) {
+					result = handler.getResult(domain)
+					if (result) {
+						query.addAnswer(domain, new named.ARecord(result), 300)
+						break
+					}
 				}
-			}
-			break
-		case 'AAAA': // ipv6
-			var record = new named.AAAARecord('::1')
-			query.addAnswer(domain, record, 300)
-			break
-		case 'CNAME':
-			var record = new named.CNAMERecord('cname.example.com')
-			query.addAnswer(domain, record, 300)
-			break
-		case 'MX':
-			var record = new named.MXRecord('smtp.example.com')
-			query.addAnswer(domain, record, 300)
-			break
-		case 'SOA':
-			var record = new named.SOARecord('example.com')
-			query.addAnswer(domain, record, 300)
-			break
-		case 'SRV':
-			var record = new named.SRVRecord('sip.example.com', 5060)
-			query.addAnswer(domain, record, 300)
-			break
-		case 'TXT':
-			var record = new named.TXTRecord('hello world')
-			query.addAnswer(domain, record, 300)
-			break
-		default:
-			break
-	}
+				break
+			case 'AAAA': // ipv6
+				var record = new named.AAAARecord('::1')
+				query.addAnswer(domain, record, 300)
+				break
+			case 'CNAME':
+				var record = new named.CNAMERecord('cname.example.com')
+				query.addAnswer(domain, record, 300)
+				break
+			case 'MX':
+				var record = new named.MXRecord('smtp.example.com')
+				query.addAnswer(domain, record, 300)
+				break
+			case 'SOA':
+				var record = new named.SOARecord('example.com')
+				query.addAnswer(domain, record, 300)
+				break
+			case 'SRV':
+				var record = new named.SRVRecord('sip.example.com', 5060)
+				query.addAnswer(domain, record, 300)
+				break
+			case 'TXT':
+				var record = new named.TXTRecord('hello world')
+				query.addAnswer(domain, record, 300)
+				break
+			default:
+				break
+		}
+	})
 }
 
-function send (buf, len, port, addr) {
-  socket.send(buf, 0, len, port, addr, function (err, bytes) {
-    if (err) {
-      appLog.error(err)
-    }
-  })
+function send(buf, len, port, addr) {
+	socket.send(buf, 0, len, port, addr, function (err, bytes) {
+		if (err) {
+			appLog.error(err)
+		}
+	})
 }
 
 process.on('SIGINT', () => {
@@ -172,7 +188,8 @@ process.on('SIGINT', () => {
 })
 
 process.on('exit', function () {
-	w_udpServer.kill('SIGTERM')
-	w_dnsHandler.kill('SIGTERM')
+	w_dnsHandlers.map(worker => {
+		worker.kill('SIGTERM')
+	})
 	console.log('main process exit')
 })

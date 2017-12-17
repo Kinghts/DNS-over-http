@@ -23,6 +23,6 @@ module.exports = {
   },
   // 子进程
   childProcess: {
-    num: 2 // 子进程数目
+    num: 4 // 子进程数目
   }
 }

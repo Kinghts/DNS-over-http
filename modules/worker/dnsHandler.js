@@ -45,49 +45,55 @@ process.on('message', function (msg) {
 })
 
 function sendQuery(buffer, rinfo) {
-  var decoded
-  var query
-  var raw = {
-    buf: buffer,
-    len: rinfo.size
-  }
+  setImmediate(function () {
+    var decoded
+    var query
+    var raw = {
+      buf: buffer,
+      len: rinfo.size
+    }
 
-  var src = {
-    family: 'udp6',
-    address: rinfo.address,
-    port: rinfo.port
-  }
+    var src = {
+      family: 'udp6',
+      address: rinfo.address,
+      port: rinfo.port
+    }
 
-  try {
-    decoded = Query.parse(raw, src)
-    query = Query.createQuery(decoded)
-  } catch (e) {
-    process.send({ type: msgType.error, msg: new ProtocolError('invalid DNS datagram') })
-  }
+    try {
+      decoded = Query.parse(raw, src)
+      query = Query.createQuery(decoded)
+    } catch (e) {
+      process.send({ type: msgType.error, msg: new ProtocolError('invalid DNS datagram') })
+    }
 
-  if (query === undefined || query === null) {
-    return
-  }
+    if (query === undefined || query === null) {
+      return
+    }
 
-  process.send({ type: msgType.query, msg: query }) // query对象json化后会丢失function
+    process.send({ type: msgType.query, msg: query }) // query对象json化后会丢失function
+  })
 }
 
 function sendAnswer(query) {
-  assert.ok(query)
+  setImmediate(function () {
 
-  try {
-    query._flags.qr = 1  // replace with function
-    query.encode()
-  } catch (e) {
-    process.send({ type: msgType.error, msg: new ExceptionError('unable to encode response') })
-  }
 
-  var addr = query._client.address
-  var buf = query._raw.buf
-  var len = query._raw.len
-  var port = query._client.port
+    assert.ok(query)
 
-  process.send({ type: msgType.sendBuf, msg: { buf: buf, len: len, port: port, addr: addr } })
+    try {
+      query._flags.qr = 1  // replace with function
+      query.encode()
+    } catch (e) {
+      process.send({ type: msgType.error, msg: new ExceptionError('unable to encode response') })
+    }
+
+    var addr = query._client.address
+    var buf = query._raw.buf
+    var len = query._raw.len
+    var port = query._client.port
+
+    process.send({ type: msgType.sendBuf, msg: { buf: buf, len: len, port: port, addr: addr } })
+  })
 }
 
 process.on('SIGTERM', function () {
