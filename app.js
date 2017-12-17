@@ -1,4 +1,5 @@
 const path = require('path')
+const dgram = require('dgram')
 const cp = require('child_process')
 const config = require('./config/base.config.js')
 const serverConfig = require(path.resolve(config.configFilePath, 'server.config.js'))
@@ -38,23 +39,53 @@ const interv = setInterval(() => {
 		})
 }, serverConfig.cacheControl.interval)
 
-let w_udpServer = cp.fork(path.resolve(__dirname, './modules/worker/udpServer.js'))
+
+let socket
+(function initUDPServer() {
+	let address = serverConfig.localServer.address
+	let port = serverConfig.localServer.port
+
+	if (!port)
+		throw new TypeError('port (number) is required');
+
+	let defaultIP = '::0'
+	let udpType = 'udp6'
+	let match = address.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/)
+	if (match) {
+		if (match[1] <= 255 && match[2] <= 255 && match[3] <= 255 && match[4] <= 255) {
+			defaultIP = '127.0.0.1'
+			udpType = 'udp4'
+		}
+	}
+
+	if (typeof (address) === 'function' || !address) {
+		callback = address
+		address = defaultIP
+	}
+
+	socket = dgram.createSocket(udpType)
+
+	socket.once('listening', function () {
+		appLog.info('listen on 53')
+	})
+
+	socket.on('close', function () {
+
+	})
+
+	socket.on('error', function (err) {
+
+	})
+
+	socket.on('message', function (buffer, rinfo) {
+		w_dnsHandler.send({ type: msgType.recBuf, msg: { buffer: buffer, rinfo: rinfo } })
+	})
+
+	socket.bind(port, address)
+})()
+
 let w_dnsHandler = cp.fork(path.resolve(__dirname, './modules/worker/dnsHandler.js'))
 
-w_udpServer.on('message', function (msg) {
-	var m = msg.msg
-	switch (msg.type) {
-		case msgType.info:
-			// appLog.info(m)
-			break
-		case msgType.error:
-			errLog.error(m)
-			break
-		case msgType.recBuf:
-			w_dnsHandler.send(msg)
-			break
-	}
-})
 w_dnsHandler.on('message', function (msg) {
 	var m = msg.msg
 	switch (msg.type) {
@@ -65,7 +96,7 @@ w_dnsHandler.on('message', function (msg) {
 			errLog.error('dnsHandler: ' + m)
 			break
 		case msgType.sendBuf:
-			w_udpServer.send(msg)
+			send(new Buffer(m.buf.data), m.len, m.port, m.addr)
 			break
 		case msgType.query:
 			Object.assign(m, Query.prototype)
@@ -86,11 +117,11 @@ function getRecord(query) {
 		case 'A': // ipv4
 			let result
 			for (let handler of handlers) {
-					result = handler.getResult(domain)
-					if (result) {
-						query.addAnswer(domain, new named.ARecord(result), 300)
-						break
-					}
+				result = handler.getResult(domain)
+				if (result) {
+					query.addAnswer(domain, new named.ARecord(result), 300)
+					break
+				}
 			}
 			break
 		case 'AAAA': // ipv6
@@ -122,9 +153,22 @@ function getRecord(query) {
 	}
 }
 
+function send (buf, len, port, addr) {
+  socket.send(buf, 0, len, port, addr, function (err, bytes) {
+    if (err) {
+      appLog.error(err)
+    }
+  })
+}
+
 process.on('SIGINT', () => {
 	clearInterval(interv)
-	process.exit()
+	socket.close((err) => {
+		if (err) {
+			appLog.error(err)
+		}
+		process.exit()
+	})
 })
 
 process.on('exit', function () {
