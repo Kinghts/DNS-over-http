@@ -20,5 +20,9 @@ module.exports = {
     time: 172800000, // 缓存记录保存时间，单位：毫秒
     maxNumber: 1000, // 每种记录的最大条数
     interval: 3600000, // 缓存定时写入文件，单位：毫秒
+  },
+  // 子进程
+  childProcess: {
+    num: 2 // 子进程数目
   }
 }
