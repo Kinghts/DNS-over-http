@@ -23,6 +23,8 @@ const handlers = [blockHandler, hostsHandler, cacheHandler]
 cacheHandler.readCacheFile()
 	.then(() => {
 		//start()
+		appLog.info('finished to read cache file')
+		console.log(cacheHandler.getResult('baidu.com'))
 	})
 	.catch((err) => {
 		errLog.error(err)
@@ -86,12 +88,13 @@ let socket
 
 let childNum = serverConfig.childProcess.num
 let w_dnsHandlers = []
+let index = -1
 let workerIndex = function () {
-	if (workerIndex === undefined) {
-		workerIndex = 0
-	} else {
-		return workerIndex < childNum ? workerIndex++ : 0
+	index++
+	if (index >= childNum) {
+		index = 0
 	}
+	return index
 }
 for (let i = 0; i < childNum; i++) {
 	w_dnsHandlers.push(cp.fork(path.resolve(__dirname, './modules/worker/dnsHandler.js')))
@@ -109,7 +112,6 @@ w_dnsHandlers.map(function (worker) {
 				break
 			case msgType.sendBuf:
 				send(new Buffer(m.buf.data), m.len, m.port, m.addr)
-				console.log('send answer')
 				break
 			case msgType.query:
 				Object.assign(m, Query.prototype)
@@ -127,7 +129,7 @@ function getRecord(query) {
 	setImmediate(function () {
 		var domain = query.name()
 		var type = query.type()
-		appLog.info('query: ' + domain + ' type: ' + type)
+		//appLog.info('query: ' + domain + ' type: ' + type)
 		switch (type) {
 			case 'A': // ipv4
 				let result
@@ -135,6 +137,7 @@ function getRecord(query) {
 					result = handler.getResult(domain)
 					if (result) {
 						query.addAnswer(domain, new named.ARecord(result), 300)
+						console.log('got result: ' + domain + ' result: ' + result)
 						break
 					}
 				}
@@ -177,7 +180,7 @@ function send(buf, len, port, addr) {
 	})
 }
 
-process.on('SIGINT', () => {
+process.on('exit', function () {
 	clearInterval(interv)
 	socket.close((err) => {
 		if (err) {
@@ -185,11 +188,12 @@ process.on('SIGINT', () => {
 		}
 		process.exit()
 	})
-})
-
-process.on('exit', function () {
 	w_dnsHandlers.map(worker => {
 		worker.kill('SIGTERM')
 	})
 	console.log('main process exit')
+})
+
+process.on('uncaughtException', (err) => {
+	appLog.error(err)
 })

@@ -21,7 +21,7 @@ process.on('message', function (msg) {
       break
     case msgType.answer:
       Object.assign(m, Query.Query.prototype)
-      if (m._answers.length === 0) { // 没有从缓存查询到记录
+      if (m._anCount === 0) { // 没有从缓存查询到记录
         httpHandler.getResult(m.name())
           .then(ip => {
             if (ip) {
@@ -30,7 +30,7 @@ process.on('message', function (msg) {
             }
           })
           .catch(err => {
-            process.send({ type: msgType.error, msg: 'http query error' })
+            process.send({ type: msgType.error, msg: 'http query error: ' + err + 'domain: ' + m.name() })
           })
       } else {
         sendAnswer(m)
@@ -102,5 +102,5 @@ process.on('SIGTERM', function () {
 })
 
 process.on('uncaughtException', function (err) {
-  process.send({ type: msgType.error, msg: err })
+  //process.send({ type: msgType.error, msg: err })
 })
