@@ -27,6 +27,7 @@ process.on('message', function (msg) {
             if (ip) {
               m.addAnswer(m.name(), new named.ARecord(ip), 300)
               sendAnswer(m)
+              process.send({ type: msgType.update, msg: { type: 'A', domain: m.name(), result: ip } })
             }
           })
           .catch(err => {

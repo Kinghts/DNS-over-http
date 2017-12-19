@@ -119,14 +119,13 @@ w_dnsHandlers.map(function (worker) {
 				this.send({ type: msgType.answer, msg: m })
 				break
 			case msgType.update:
-				console.log('update: ' + m)
+				cacheHandler.updateCache(m.type, m.domain, m.result)
 				break
 		}
 	})
 })
 
 function getRecord(query) {
-	setImmediate(function () {
 		var domain = query.name()
 		var type = query.type()
 		//appLog.info('query: ' + domain + ' type: ' + type)
@@ -137,10 +136,10 @@ function getRecord(query) {
 					result = handler.getResult(domain)
 					if (result) {
 						query.addAnswer(domain, new named.ARecord(result), 300)
-						console.log('got result: ' + domain + ' result: ' + result)
-						break
+						return
 					}
 				}
+				appLog.info('cache missed: ' + domain)
 				break
 			case 'AAAA': // ipv6
 				var record = new named.AAAARecord('::1')
@@ -169,7 +168,6 @@ function getRecord(query) {
 			default:
 				break
 		}
-	})
 }
 
 function send(buf, len, port, addr) {
