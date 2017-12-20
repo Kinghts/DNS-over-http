@@ -24,7 +24,6 @@ cacheHandler.readCacheFile()
 	.then(() => {
 		//start()
 		appLog.info('finished to read cache file')
-		console.log(cacheHandler.getResult('baidu.com'))
 	})
 	.catch((err) => {
 		errLog.error(err)
