@@ -15,68 +15,71 @@ function Cache () {
   }
 }
 
-Cache.prototype.readCacheFile = function () {
+Cache.prototype.readCacheFile = async function () {
   let promises = []
   for (let type in this.records) {
     promises.push(new Promise((resolve, reject) => {
       let filePath = path.resolve(cacheDir, type + '.json')
-      fs.exists(filePath, (exists) => {
-        if (exists) {
-          fs.readFile(filePath, (err, data) => {
-            if (err) {
-              reject(err)
-            }
-            let fileString = data.toString('utf-8')
-            if (fileString.match(/^\s*$/g)) { // 文件内容为空
-              this.records[type] = new LRU(serverConfig.cacheControl.maxNumber)
-            } else {
-              this.records[type] = new LRU(serverConfig.cacheControl.maxNumber, JSON.parse(fileString))              
-            }
+      fs.readFile(filePath, (err, data) => {
+        if (err) {
+          if (err.code === 'ENOENT') { // 缓存文件不存在
+            this.records[type] = new LRU(serverConfig.cacheControl.maxNumber)
             resolve()
-          })
-        } else {
-          this.records[type] = new LRU(serverConfig.cacheControl.maxNumber)
-          resolve()
+          } else {
+            reject(err)
+          }
+          return
         }
+        let fileString = data.toString('utf-8')
+        if (fileString.match(/^\s*$/g)) { // 文件内容为空
+          this.records[type] = new LRU(serverConfig.cacheControl.maxNumber)
+        } else {
+          this.records[type] = new LRU(serverConfig.cacheControl.maxNumber, JSON.parse(fileString))              
+        }
+        resolve()
       })
     }))
   }
-  return Promise.all(promises)
+  await Promise.all(promises)
 }
 
-Cache.prototype.writeCacheToFile = function () {
-  return new Promise((resolve, reject) => {
-    new Promise((reso, reje) => {
-      fs.exists(cacheDir, (exists) => {
-        if (!exists) {
-          fs.mkdir(cacheDir, (err) => {
-            if (err) {
-              reje(err)
-            }
-            reso()
-          })
+Cache.prototype.writeCacheToFile = async function () {
+  let createDir = await new Promise((resolve, reject) => {
+    fs.stat(cacheDir, (err, stats) => {
+      if (err) {
+        if (err.code === 'ENOENT') { // cache文件夹不存在
+          resolve(true)
         } else {
-          reso()
+          reject(err)
         }
-      })
-    }).then(() => {
-      let promises = []
-      for (let type in this.records) {
-        promises.push(new Promise((res, rej) => {
-          let map = this.records[type].toMap()
-          fs.writeFile(path.resolve(cacheDir, type + '.json'), JSON.stringify([...map]), (err) => {
-            if (err) {
-              rej(err)
-            }
-            res()
-          })
-        }))
+      } else {
+        resolve()
       }
-      resolve(Promise.all(promises))
-    }).catch(err => {
-      reject(err)
     })
   })
+  if (createDir) {
+    await new Promise((resolve, reject) => {
+      fs.mkdir(cacheDir, (err) => {
+        if (err) {
+          reject(err)
+        }
+        resolve()
+      })
+    })
+  }
+  let promises = []
+  for (let type in this.records) {
+    promises.push(new Promise((resolve, reject) => {
+      let map = this.records[type].toMap()
+      fs.writeFile(path.resolve(cacheDir, type + '.json'), JSON.stringify([...map]), (err) => {
+        if (err) {
+          reject(err)
+        }
+        resolve()
+      })
+    }))
+  }
+  await Promise.all(promises) 
 }
 
 Cache.prototype.getResult = function (domain, type) {
