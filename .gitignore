@@ -3,4 +3,4 @@
 node_modules/
 /log/*
 /cache/*.json
-.npmrc
+package-lock.json
