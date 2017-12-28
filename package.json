@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": ".\\node_modules\\.bin\\ava .\\test"
   },
   "keywords": [],
   "author": "",
@@ -12,6 +12,10 @@
   "dependencies": {
     "bunyan": "^1.8.12",
     "ipaddr.js": "^1.5.2",
-    "log4js": "^2.3.3"
+    "log4js": "^2.3.3",
+    "napajs": "^0.1.7"
+  },
+  "devDependencies": {
+    "ava": "^0.24.0"
   }
 }

@@ -1,9 +1,12 @@
 const path = require('path')
+const dgram = require('dgram')
+const cp = require('child_process')
 const config = require('./config/base.config.js')
 const serverConfig = require(path.resolve(config.configFilePath, 'server.config.js'))
+const msgType = require('./modules/util/msgType')
 
 const named = require('./lib')
-let server = named.createServer()
+const { Query } = require('./lib/query')
 
 const log4js = require('log4js')
 log4js.configure(require(path.resolve(config.configFilePath, 'log4js.config.js')))
@@ -14,61 +17,133 @@ const errLog = log4js.getLogger('error')
 const blockHandler = new (require('./modules/handler/block'))()
 const hostsHandler = new (require('./modules/handler/hosts'))()
 const cacheHandler = new (require('./modules/handler/cache'))()
-const httpHandler = new (require('./modules/handler/http'))()
 
-const handlers = [blockHandler, hostsHandler, cacheHandler, httpHandler]
+const handlers = [blockHandler, hostsHandler, cacheHandler]
 
 cacheHandler.readCacheFile()
 	.then(() => {
-		start()
+		//start()
+		appLog.info('finished to read cache file')
+		console.log(cacheHandler.getResult('baidu.com'))
 	})
 	.catch((err) => {
 		errLog.error(err)
 	})
 
-function start() {
-	server.listen(serverConfig.localServer.port, serverConfig.localServer.address, function () {
-		appLog.info('DNS server started on port 53');
+// 缓存定时写入文件
+const interv = setInterval(() => {
+	cacheHandler.writeCacheToFile()
+		.then(() => {
+			appLog.info('save cache success')
+		})
+		.catch((err) => {
+			errLog.error(err)
+		})
+}, serverConfig.cacheControl.interval)
+
+
+let socket
+(function initUDPServer() {
+	let address = serverConfig.localServer.address
+	let port = serverConfig.localServer.port
+
+	if (!port)
+		throw new TypeError('port (number) is required');
+
+	let defaultIP = '::0'
+	let udpType = 'udp6'
+	let match = address.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/)
+	if (match) {
+		if (match[1] <= 255 && match[2] <= 255 && match[3] <= 255 && match[4] <= 255) {
+			defaultIP = '127.0.0.1'
+			udpType = 'udp4'
+		}
+	}
+
+	if (typeof (address) === 'function' || !address) {
+		callback = address
+		address = defaultIP
+	}
+
+	socket = dgram.createSocket(udpType)
+
+	socket.once('listening', function () {
+		appLog.info('listen on 53')
 	})
 
-	server.on('query', function (query) {
+	socket.on('close', function () {
+
+	})
+
+	socket.on('error', function (err) {
+		appLog.error(err)
+	})
+
+	socket.on('message', function (buffer, rinfo) {
+		w_dnsHandlers[workerIndex()].send({ type: msgType.recBuf, msg: { buffer: buffer, rinfo: rinfo } })
+	})
+
+	socket.bind(port, address)
+})()
+
+let childNum = serverConfig.childProcess.num
+let w_dnsHandlers = []
+let index = -1
+let workerIndex = function () {
+	index++
+	if (index >= childNum) {
+		index = 0
+	}
+	return index
+}
+for (let i = 0; i < childNum; i++) {
+	w_dnsHandlers.push(cp.fork(path.resolve(__dirname, './modules/worker/dnsHandler.js')))
+}
+
+w_dnsHandlers.map(function (worker) {
+	worker.on('message', function (msg) {
+		var m = msg.msg
+		switch (msg.type) {
+			case msgType.info:
+				// appLog.info('dnsHandler: ' + m)
+				break
+			case msgType.error:
+				errLog.error('dnsHandler: ' + m)
+				break
+			case msgType.sendBuf:
+				send(new Buffer(m.buf.data), m.len, m.port, m.addr)
+				break
+			case msgType.query:
+				Object.assign(m, Query.prototype)
+				getRecord(m)
+				this.send({ type: msgType.answer, msg: m })
+				break
+			case msgType.update:
+				cacheHandler.updateCache(m.type, m.domain, m.result)
+				break
+		}
+	})
+})
+
+function getRecord(query) {
 		var domain = query.name()
 		var type = query.type()
-		accessLog.info('domain: %s; type: %s', domain, type)
+		//appLog.info('query: ' + domain + ' type: ' + type)
 		switch (type) {
 			case 'A': // ipv4
 				let result
 				for (let handler of handlers) {
-					if (handler.sync) {
-						result = handler.getResult(domain)
-						if (result) {
-							query.addAnswer(domain, new named.ARecord(result), 300)
-							server.send(query)
-							break
-						}
-					} else {
-						handler.getResult(domain)
-							.then(ip => {
-								if (ip) {
-									query.addAnswer(domain, new named.ARecord(ip), 300)
-									cacheHandler.updateCache(type, domain, ip)
-									server.send(query)
-								} else {
-									accessLog.info('domain: ' + domain + ' no answer')
-									server.send(query)
-								}
-							})
-							.catch(err => {
-								errLog.error('domain: ' + domain + '\\r\\n' + err)
-								server.send(query)
-							})
+					result = handler.getResult(domain)
+					if (result) {
+						query.addAnswer(domain, new named.ARecord(result), 300)
+						return
 					}
 				}
+				appLog.info('cache missed: ' + domain)
 				break
 			case 'AAAA': // ipv6
 				var record = new named.AAAARecord('::1')
 				query.addAnswer(domain, record, 300)
-				server.send(query)
 				break
 			case 'CNAME':
 				var record = new named.CNAMERecord('cname.example.com')
@@ -91,36 +166,32 @@ function start() {
 				query.addAnswer(domain, record, 300)
 				break
 			default:
-				server.send(query)
 				break
 		}
-	})
+}
 
-	server.on('clientError', function (error) {
-		errLog.error("there was a clientError: %s", error)
-	})
-
-	server.on('uncaughtException', function (error) {
-		errLog.error("there was an excepton: %s", error.message || error.message())
+function send(buf, len, port, addr) {
+	socket.send(buf, 0, len, port, addr, function (err, bytes) {
+		if (err) {
+			appLog.error(err)
+		}
 	})
 }
 
-// 缓存定时写入文件
-const interv = setInterval(() => {
-	cacheHandler.writeCacheToFile()
-		.then(() => {
-			appLog.info('save cache success')
-		})
-		.catch((err) => {
-			errLog.error(err)
-		})
-},serverConfig.cacheControl.interval)
-
-process.on('SIGINT', () => {
+process.on('exit', function () {
 	clearInterval(interv)
-	
-	server.close(() => {
-		appLog.info('server closed')
+	socket.close((err) => {
+		if (err) {
+			appLog.error(err)
+		}
 		process.exit()
 	})
+	w_dnsHandlers.map(worker => {
+		worker.kill('SIGTERM')
+	})
+	console.log('main process exit')
+})
+
+process.on('uncaughtException', (err) => {
+	appLog.error(err)
 })
