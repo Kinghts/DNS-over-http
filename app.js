@@ -128,18 +128,18 @@ w_dnsHandlers.map(function (worker) {
 function getRecord(query) {
 		var domain = query.name()
 		var type = query.type()
-		//appLog.info('query: ' + domain + ' type: ' + type)
+		appLog.info('query: ' + domain + ' type: ' + type)
 		switch (type) {
 			case 'A': // ipv4
 				let result
 				for (let handler of handlers) {
 					result = handler.getResult(domain)
 					if (result) {
+						appLog.info('answer for ' + domain + ': ' + result)
 						query.addAnswer(domain, new named.ARecord(result), 300)
 						return
 					}
 				}
-				appLog.info('cache missed: ' + domain)
 				break
 			case 'AAAA': // ipv6
 				var record = new named.AAAARecord('::1')
