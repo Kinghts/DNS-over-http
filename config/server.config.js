@@ -11,13 +11,13 @@ module.exports = {
   },
   // 本地dns服务器配置
   localServer: {
-    address: '0.0.0.0',
+    address: '127.0.0.1',
     port: 53
   },
   // 缓存策略
   cacheControl: {
     cacheFileDir: path.resolve(__dirname, '../cache/'), // 缓存文件所在目录的绝对路径
-    time: 172800000, // 缓存记录保存时间，单位：毫秒
+    time: 86400000, // 缓存记录保存时间，单位：毫秒
     maxNumber: 1000, // 每种记录的最大条数
     interval: 3600000, // 缓存定时写入文件，单位：毫秒
   },
