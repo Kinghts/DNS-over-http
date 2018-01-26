@@ -15,6 +15,30 @@ module.exports = {
     {
       url: 'wpscdn.cn',
       blockAll: true
-    }
+    },
+    {
+      url: 'ksosoft.com',
+      blockAll: true
+    },
+    {
+      url: 'nsclick.baidu.com',
+      blockAll: true
+    },
+    {
+      url: 'eclick.baidu.com',
+      blockAll: true
+    },
+    {
+      url: 'hm.baidu.com',
+      blockAll: true
+    },
+    {
+      url: 'bdimg.share.baidu.com',
+      blockAll: true
+    },
+    {
+      url: 'pos.baidu.com',
+      blockAll: true
+    },
   ]
 }
