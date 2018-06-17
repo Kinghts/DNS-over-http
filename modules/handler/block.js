@@ -13,7 +13,8 @@ function Block () {
       throw 'wrong config, please check block.config.js'
     } 
     if (e.blockAll) {
-      this.blockRegex.push(RegExp('.*' + e.url.replace(/\./g, '\\.').toLowerCase() + '$', 'g'))
+      let url = e.url.replace(/\./g, '\\.').toLowerCase() + '$'
+      this.blockRegex.push(RegExp(`(^${url})|(\\.${url})` , 'g'))
     } else {
       this.blockUrl.add(e.url)
     }
