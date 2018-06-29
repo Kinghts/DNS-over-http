@@ -1,14 +1,33 @@
 const path = require('path')
 
-module.exports = {
-  // 提供http dns的服务器，默认使用dnspod的服务器
-  httpServer: {
+const DNS = {
+  cloudflare: {
+    https: true,
+    hostname: '1.0.0.1',
+    port: 443,
+    path: domain => `/dns-query?ct=application/dns-json&name=${domain}&type=A`,
+    method: 'GET',
+    resultHandler: (result) => {
+      let r = JSON.parse(result), answer = ''
+      if (r.Status === 0) {
+        answer = r.Answer.length > 1 ? r.Answer.pop().data : r.Answer[0].data
+      }
+      return answer
+    }
+  },
+  dnspod: {
+    http: false,
     hostname: '119.29.29.29',
     port: 80,
     path: domain => '/d?dn=' + domain + '.',
     method: 'GET',
     resultHandler: result => result.split(';')[0]
-  },
+  }
+}
+
+module.exports = {
+  // 提供http/https dns的服务器
+  httpServer: DNS.cloudflare,
   // 本地dns服务器配置
   localServer: {
     address: '127.0.0.1',

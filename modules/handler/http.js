@@ -1,4 +1,5 @@
-const http = require('http')
+let http = require('http')
+const https = require('https')
 const path = require('path')
 const config = require('../../config/base.config.js')
 const serverConfig = require(path.resolve(config.configFilePath, 'server.config.js'))
@@ -7,16 +8,22 @@ function Http () {
   this.sync = false
 }
 
+function h() {
+  if (serverConfig.httpServer.https) {
+    return https
+  }
+  return http
+}
+
 Http.prototype.getResult = function (domain) {
   return new Promise(function (resolve, reject) {
     let options = {
       hostname: serverConfig.httpServer.hostname,
       port: serverConfig.httpServer.port,
       path: serverConfig.httpServer.path(domain),
-      method: serverConfig.httpServer.method,
-      agent: false
+      method: serverConfig.httpServer.method
     }
-    let req = http.request(options, (res) => {
+    let req = h().request(options, (res) => {
       // console.log('STATUS: ' + res.statusCode)
       // console.log('HEADERS: ' + JSON.stringify(res.headers))
       res.setEncoding('utf8')
