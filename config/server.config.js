@@ -3,7 +3,7 @@ const path = require('path')
 const DNS = {
   cloudflare: {
     https: true,
-    hostname: '1.0.0.1',
+    hostname: '1.1.1.1',
     port: 443,
     path: domain => `/dns-query?ct=application/dns-json&name=${domain}&type=A`,
     method: 'GET',
@@ -16,7 +16,7 @@ const DNS = {
     }
   },
   dnspod: {
-    http: false,
+    https: false,
     hostname: '119.29.29.29',
     port: 80,
     path: domain => '/d?dn=' + domain + '.',
